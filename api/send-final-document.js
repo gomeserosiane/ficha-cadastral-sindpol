@@ -1,4 +1,4 @@
-import { downloadFinalPdf, getDocumentData, isDocumentFinished } from "../lib/assinafy.js";
+import { waitAndDownloadFinalPdf, getDocumentData, isDocumentFinished } from "../lib/assinafy.js";
 import { getDocumentMetadata, markEmailSent } from "../lib/document-store.js";
 import { getFinalRecipients, sendFinalDocumentEmail } from "../lib/email.js";
 
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const { pdfBuffer, artifactName } = await downloadFinalPdf(documentId, documentData);
+    const { pdfBuffer, artifactName } = await waitAndDownloadFinalPdf(documentId, { attempts: 12, intervalMs: 3000 });
     const filename = metadata?.documentName || documentData?.name || `documento-assinado-${documentId}.pdf`;
 
     await sendFinalDocumentEmail({

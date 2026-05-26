@@ -69,17 +69,24 @@ export default async function handler(req, res) {
       ...metadata,
       assignmentStatus: "created",
       assignment: assignmentResult?.assignment || assignmentResult,
+      signerInvitations: assignmentResult?.signerInvitations || null,
       signerInvitation: assignmentResult?.signerInvitation || null,
       assignmentCreatedAt: new Date().toISOString(),
     });
 
+    const proponenteSent = assignmentResult?.signerInvitations?.proponente?.sent;
+    const sindicatoSent = assignmentResult?.signerInvitations?.sindicato?.sent;
+
     return sendJson(res, 200, {
-      message: assignmentResult?.signerInvitation?.sent
-        ? "Atribuição criada e convite enviado ao signatário por e-mail."
-        : "Atribuição criada, mas não foi possível confirmar o envio do convite por e-mail.",
+      message: proponenteSent && sindicatoSent
+        ? "Atribuição criada e convites enviados ao proponente e ao sindicato por e-mail."
+        : "Atribuição criada, mas não foi possível confirmar o envio de todos os convites por e-mail.",
       documentId,
       signerEmail,
+      proponenteSignerEmail: metadata?.proponenteSignerEmail || metadata?.proponenteEmail,
+      sindicatoSignerEmail: signerEmail,
       assignmentCreated: true,
+      signerInvitations: assignmentResult?.signerInvitations || null,
       signerInvitation: assignmentResult?.signerInvitation || null,
       assignment: assignmentResult?.assignment || assignmentResult,
     });

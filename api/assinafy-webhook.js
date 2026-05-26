@@ -1,5 +1,5 @@
 import {
-  downloadFinalPdf,
+  waitAndDownloadFinalPdf,
   extractDocumentId,
   extractMetadata,
   getDocumentData,
@@ -72,7 +72,7 @@ export default async function handler(req, res) {
       metadata?.documentName || documentData?.name || body?.object?.name || `ficha-${slugify(recipientName)}.pdf`
     );
 
-    const { pdfBuffer, artifactName } = await downloadFinalPdf(documentId, documentData);
+    const { pdfBuffer, artifactName } = await waitAndDownloadFinalPdf(documentId, { attempts: 12, intervalMs: 3000 });
 
     await sendFinalDocumentEmail({
       to: recipients,
