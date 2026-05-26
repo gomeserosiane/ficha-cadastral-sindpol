@@ -753,7 +753,9 @@ async function enviarPdfParaAssinafy(pdfBlob, filename, payload) {
 }
 
 
-async function iniciarAssinaturaAssinafyComRetry(documentId) {
+async function iniciarAssinaturaAssinafyComRetry(resultadoAssinafy, payload) {
+  const documentId = resultadoAssinafy?.documentId || resultadoAssinafy?.id;
+
   if (!documentId) {
     throw new Error("Documento criado, mas o ID não foi retornado pela Assinafy.");
   }
@@ -763,8 +765,15 @@ async function iniciarAssinaturaAssinafyComRetry(documentId) {
   let ultimoResultado = null;
 
   for (let tentativa = 1; tentativa <= maxTentativas; tentativa++) {
-    const response = await fetch(`/api/start-assignment?documentId=${encodeURIComponent(documentId)}`, {
-      method: "GET",
+    const response = await fetch("/api/start-assignment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        documentId,
+        proponenteEmail: payload?.dadosProponente?.email || resultadoAssinafy?.proponenteEmail || resultadoAssinafy?.proponenteSignerEmail || "",
+        proponenteName: payload?.dadosProponente?.nome || resultadoAssinafy?.proponenteName || resultadoAssinafy?.proponenteSignerName || "Proponente",
+        sindicatoSignerEmail: resultadoAssinafy?.sindicatoSignerEmail || "",
+      }),
     });
 
     const result = await response.json().catch(() => ({}));
@@ -825,7 +834,7 @@ async function processarEnvio(event) {
     const resultadoAssinafy = await enviarPdfParaAssinafy(pdfBlob, filename, payload);
 
     if (submitBtn) submitBtn.textContent = "Aguardando processamento da Assinafy...";
-    await iniciarAssinaturaAssinafyComRetry(resultadoAssinafy.documentId);
+    await iniciarAssinaturaAssinafyComRetry(resultadoAssinafy, payload);
 
     alert("Documento enviado para a Assinafy. O proponente receberá o convite no e-mail informado no formulário e o sindicato também será registrado como 2º signatário. Quando os dois assinarem, o PDF final e o documento de autenticidade serão enviados aos 2 e-mails configurados.");
   } catch (error) {

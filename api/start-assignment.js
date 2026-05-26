@@ -37,7 +37,24 @@ export default async function handler(req, res) {
       });
     }
 
-    const metadata = getDocumentMetadata(documentId) || {};
+    const savedMetadata = getDocumentMetadata(documentId) || {};
+
+    // Em ambiente serverless (Vercel), a segunda chamada pode cair em outra instância
+    // e não encontrar o metadata salvo em /tmp/memória. Por isso o front envia novamente
+    // os dados essenciais do proponente nesta rota. Assim a criação dos 2 signatários
+    // não depende somente do cache local.
+    const proponenteEmailFromRequest = req.body?.proponenteEmail || req.query?.proponenteEmail;
+    const proponenteNameFromRequest = req.body?.proponenteName || req.query?.proponenteName;
+    const sindicatoEmailFromRequest = req.body?.sindicatoSignerEmail || req.query?.sindicatoSignerEmail;
+
+    const metadata = {
+      ...savedMetadata,
+      proponenteEmail: savedMetadata.proponenteEmail || proponenteEmailFromRequest,
+      proponenteName: savedMetadata.proponenteName || proponenteNameFromRequest || "Proponente",
+      proponenteSignerEmail: savedMetadata.proponenteSignerEmail || proponenteEmailFromRequest,
+      proponenteSignerName: savedMetadata.proponenteSignerName || proponenteNameFromRequest || "Proponente",
+      sindicatoSignerEmail: savedMetadata.sindicatoSignerEmail || sindicatoEmailFromRequest,
+    };
 
     const signerEmail =
       metadata.sindicatoSignerEmail ||
@@ -55,6 +72,13 @@ export default async function handler(req, res) {
         message: "Não encontrei o e-mail do signatário. Configure ASSINAFY_SIGNER_EMAIL.",
       });
     }
+
+    // Salva novamente os metadados recuperados para o webhook e para o envio final.
+    saveDocumentMetadata(documentId, {
+      ...metadata,
+      sindicatoSignerEmail: signerEmail,
+      sindicatoSignerName: signerName,
+    });
 
     const assignmentResult = await startAssignmentFlow({
       baseUrl: getAssinafyBaseUrl(),
