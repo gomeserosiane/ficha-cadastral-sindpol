@@ -6,8 +6,7 @@ import {
   getDocumentData,
 } from "../lib/assinafy.js";
 import { saveDocumentMetadata } from "../lib/document-store.js";
-import { isValidEmail, sendSignerInvitationEmail } from "../lib/email.js";
-import { sendNewProponenteWhatsApp } from "../lib/whatsapp.js";
+import { isValidEmail, sendNewProponenteEmail, sendSignerInvitationEmail } from "../lib/email.js";
 
 export const config = {
   api: {
@@ -68,7 +67,7 @@ export default async function handler(req, res) {
       finalRecipients,
       documentName,
       createdAt: new Date().toISOString(),
-      flow: "sindpol-document-signature-email-final-v3",
+      flow: "sindpol-document-signature-email-final-v4",
       assignmentStatus: "pending",
     };
 
@@ -93,18 +92,20 @@ export default async function handler(req, res) {
 
     saveDocumentMetadata(documentId, metadata);
 
-    let whatsappNotification = null;
+    let newProponenteEmailNotification = null;
     try {
-      whatsappNotification = await sendNewProponenteWhatsApp({
+      newProponenteEmailNotification = await sendNewProponenteEmail({
         nome: proponenteName,
         cpf: proponenteCpf,
         nascimento: proponenteNascimento,
       });
-    } catch (whatsappError) {
-      console.error("[SINDPOL] Falha ao enviar WhatsApp de novo proponente:", whatsappError);
-      whatsappNotification = {
+    } catch (emailNotificationError) {
+      // O aviso de novo cadastro não pode travar o fluxo principal da Assinafy.
+      // Caso o SMTP ou FINAL_DOCUMENT_EMAIL_1 esteja incorreto, o documento continua sendo criado.
+      console.error("[SINDPOL] Falha ao enviar e-mail de novo proponente:", emailNotificationError);
+      newProponenteEmailNotification = {
         sent: false,
-        error: whatsappError?.message || "Falha ao enviar WhatsApp.",
+        error: emailNotificationError?.message || "Falha ao enviar e-mail de novo proponente.",
       };
     }
 
@@ -124,7 +125,7 @@ export default async function handler(req, res) {
       proponenteSignerEmail: proponenteEmail,
       sindicatoSignerEmail,
       finalRecipients,
-      whatsappNotification,
+      newProponenteEmailNotification,
       nextStep: `/api/start-assignment?documentId=${documentId}`,
       assignmentCreated: false,
     });
