@@ -15,7 +15,8 @@
    - campo do **SINDICATO** acima de `ASSINATURA DO SINDICATO`.
 8. O proponente recebe o convite no e-mail informado no formulário.
 9. O sindicato recebe o convite no e-mail configurado na Vercel.
-10. Quando os 2 signatários assinarem, o webhook baixa o arquivo final assinado/certificado da Assinafy e envia para os 2 e-mails configurados em `FINAL_DOCUMENT_EMAIL_1` e `FINAL_DOCUMENT_EMAIL_2`.
+10. Após criar o documento, o backend dispara uma notificação de novo cadastro para o WhatsApp configurado, contendo nome, CPF e data de nascimento do proponente.
+11. Quando os 2 signatários assinarem, o webhook baixa o arquivo final assinado/certificado da Assinafy e envia para os 2 e-mails configurados em `FINAL_DOCUMENT_EMAIL_1` e `FINAL_DOCUMENT_EMAIL_2`.
 
 ## Alterações principais desta versão
 
@@ -25,6 +26,9 @@
 - Implementado fluxo com 2 signatários obrigatórios: PROPONENTE e SINDICATO.
 - Ajustado envio final para somente 2 destinatários configurados.
 - Mantido download apenas de artefatos finais/certificados da Assinafy, evitando baixar o PDF original sem assinatura.
+- Removidos os campos, coleta e cópia de dados de `estado civil`.
+- Implementada notificação de novo proponente via WhatsApp para `5591984536649`.
+- Redimensionamento automático do texto salvo no PDF para manter os dados dentro dos espaços em branco.
 - Validado com `node --check` em `js/script.js`, rotas `api/` e bibliotecas `lib/`.
 
 ## Variáveis obrigatórias na Vercel
@@ -47,6 +51,32 @@ SMTP_SECURE=true
 SMTP_USER=seuemail@gmail.com
 SMTP_PASS=senha_de_app_google
 EMAIL_FROM=SINDPOL <seuemail@gmail.com>
+
+# WhatsApp — escolha um provedor e configure as variáveis correspondentes.
+# Destino padrão já é 5591984536649, mas pode ser sobrescrito em WHATSAPP_TO.
+WHATSAPP_TO=5591984536649
+
+# Opção 1: Meta WhatsApp Cloud API
+WHATSAPP_PROVIDER=meta
+WHATSAPP_PHONE_NUMBER_ID=id_do_numero_no_meta
+WHATSAPP_ACCESS_TOKEN=token_meta
+
+# Opção 2: Z-API
+# WHATSAPP_PROVIDER=zapi
+# ZAPI_INSTANCE_ID=id_da_instancia
+# ZAPI_TOKEN=token_da_instancia
+# ZAPI_CLIENT_TOKEN=client_token_se_houver
+
+# Opção 3: Evolution API
+# WHATSAPP_PROVIDER=evolution
+# EVOLUTION_API_URL=https://sua-evolution-api.com
+# EVOLUTION_INSTANCE_NAME=nome_da_instancia
+# EVOLUTION_API_KEY=apikey
+
+# Opção 4: endpoint customizado
+# WHATSAPP_PROVIDER=custom
+# WHATSAPP_API_URL=https://sua-api.com/send-message
+# WHATSAPP_API_TOKEN=token_opcional
 ```
 
 ## Variáveis opcionais

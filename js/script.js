@@ -324,7 +324,6 @@ function copiarDadosProponenteParaPagador() {
     pagador_uf: "f1_uf",
     pagador_telefone: "f1_telefone",
     pagador_email: "f1_email",
-    pagador_estadoCivil: "f1_estadoCivil",
     pagador_cargo: "f1_cargo",
     pagador_lotacao: "f1_lotacao",
     pagador_situacaoFuncional: "f1_situacaoFuncional",
@@ -476,7 +475,6 @@ function getFormDataObject() {
       uf: getFieldValue("f1_uf"),
       telefone: getFieldValue("f1_telefone"),
       email: getFieldValue("f1_email"),
-      estadoCivil: getFieldValue("f1_estadoCivil"),
       cargo: getFieldValue("f1_cargo"),
       lotacao: getFieldValue("f1_lotacao"),
       situacaoFuncional: getFieldValue("f1_situacaoFuncional"),
@@ -496,7 +494,6 @@ function getFormDataObject() {
       uf: getFieldValue("pagador_uf"),
       telefone: getFieldValue("pagador_telefone"),
       email: getFieldValue("pagador_email"),
-      estadoCivil: getFieldValue("pagador_estadoCivil"),
       cargo: getFieldValue("pagador_cargo"),
       lotacao: getFieldValue("pagador_lotacao"),
       situacaoFuncional: getFieldValue("pagador_situacaoFuncional"),
@@ -514,17 +511,26 @@ function getFormDataObject() {
 const PDF_MODELO_PATH = "docs/ficha-sindpol.pdf";
 const ASSINAFY_UPLOAD_ENDPOINT = "/api/assinafy-upload";
 
-function limitarTextoPorLargura(text, font, size, maxWidth) {
-  let value = String(text || "").trim();
-  if (!value) return "";
+function ajustarTextoAoBox(text, font, initialSize, maxWidth, minSize = 5.2) {
+  const value = String(text || "").trim();
+  let size = Number(initialSize || 6.6);
 
-  while (value.length > 0 && font.widthOfTextAtSize(value, size) > maxWidth) {
-    value = value.slice(0, -1);
+  // Primeiro reduz a fonte para manter o texto dentro do espaço branco do PDF.
+  while (size > minSize && font.widthOfTextAtSize(value, size) > maxWidth) {
+    size -= 0.2;
   }
 
-  return value.length < String(text || "").trim().length && value.length > 1
-    ? `${value.slice(0, -1)}…`
-    : value;
+  if (font.widthOfTextAtSize(value, size) <= maxWidth) {
+    return { value, size };
+  }
+
+  // Só corta no limite extremo, quando nem a fonte reduzida couber no campo.
+  let compactValue = value;
+  while (compactValue.length > 0 && font.widthOfTextAtSize(`${compactValue}…`, size) > maxWidth) {
+    compactValue = compactValue.slice(0, -1);
+  }
+
+  return { value: compactValue ? `${compactValue}…` : "", size };
 }
 
 function drawTextInBox(page, text, box, options = {}) {
@@ -532,21 +538,24 @@ function drawTextInBox(page, text, box, options = {}) {
 
   const [x, y, width, height] = box;
   const font = options.font;
-  const size = options.size || 7.2;
+  const initialSize = options.size || 6.6;
+  const minSize = options.minSize || 5.2;
   const paddingX = options.paddingX ?? 3;
   const pageHeight = page.getHeight();
-  const maxWidth = width - paddingX * 2;
-  const value = limitarTextoPorLargura(text, font, size, maxWidth);
+  const maxWidth = Math.max(4, width - paddingX * 2);
+  const fitted = ajustarTextoAoBox(text, font, initialSize, maxWidth, minSize);
 
-  // As coordenadas abaixo foram mapeadas pelo tamanho real do PDF.
+  if (!fitted.value) return;
+
   // O y informado representa a posição visual do topo do campo no PDF renderizado.
+  // A centralização vertical evita que o texto encoste nas bordas/linhas do modelo.
   const pdfX = x + paddingX;
-  const pdfY = pageHeight - y - height + ((height - size) / 2) + 0.8;
+  const pdfY = pageHeight - y - height + ((height - fitted.size) / 2) + 0.6;
 
-  page.drawText(value, {
+  page.drawText(fitted.value, {
     x: pdfX,
     y: pdfY,
-    size,
+    size: fitted.size,
     font,
     color: PDFLib.rgb(0, 0, 0),
   });
@@ -663,22 +672,22 @@ async function preencherPdf(payload) {
   };
 
   const drawPerson = (data, boxes) => {
-    drawTextInBox(page, data.nome, boxes.nome, { font, size: 7.2 });
-    drawTextInBox(page, data.rg, boxes.rg, { font, size: 7.2 });
-    drawTextInBox(page, data.cpf, boxes.cpf, { font, size: 7.2 });
-    drawTextInBox(page, data.nascimento, boxes.nascimento, { font, size: 7.2 });
-    drawTextInBox(page, data.sexo, boxes.sexo, { font, size: 7.2 });
-    drawTextInBox(page, data.tipoSanguineo, boxes.tipoSanguineo, { font, size: 7.2 });
-    drawTextInBox(page, data.admissao, boxes.admissao, { font, size: 7.2 });
-    drawTextInBox(page, data.telefone, boxes.telefone, { font, size: 7.2 });
-    drawTextInBox(page, data.email, boxes.email, { font, size: 7.2 });
-    drawTextInBox(page, data.endereco, boxes.endereco, { font, size: 7.2 });
-    drawTextInBox(page, data.cidade, boxes.cidade, { font, size: 7.2 });
-    drawTextInBox(page, data.uf, boxes.uf, { font, size: 7.2 });
-    drawTextInBox(page, data.cep, boxes.cep, { font, size: 7.2 });
-    drawTextInBox(page, data.cargo, boxes.cargo, { font, size: 7.2 });
-    drawTextInBox(page, data.lotacao, boxes.lotacao, { font, size: 7.2 });
-    drawTextInBox(page, data.situacaoFuncional, boxes.situacaoFuncional, { font, size: 7.2 });
+    drawTextInBox(page, data.nome, boxes.nome, { font, size: 6.6, minSize: 5.0 });
+    drawTextInBox(page, data.rg, boxes.rg, { font, size: 6.6, minSize: 5.0 });
+    drawTextInBox(page, data.cpf, boxes.cpf, { font, size: 6.6, minSize: 5.0 });
+    drawTextInBox(page, data.nascimento, boxes.nascimento, { font, size: 6.6, minSize: 5.0 });
+    drawTextInBox(page, data.sexo, boxes.sexo, { font, size: 6.6, minSize: 5.0 });
+    drawTextInBox(page, data.tipoSanguineo, boxes.tipoSanguineo, { font, size: 6.6, minSize: 5.0 });
+    drawTextInBox(page, data.admissao, boxes.admissao, { font, size: 6.6, minSize: 5.0 });
+    drawTextInBox(page, data.telefone, boxes.telefone, { font, size: 6.6, minSize: 5.0 });
+    drawTextInBox(page, data.email, boxes.email, { font, size: 6.6, minSize: 5.0 });
+    drawTextInBox(page, data.endereco, boxes.endereco, { font, size: 6.6, minSize: 5.0 });
+    drawTextInBox(page, data.cidade, boxes.cidade, { font, size: 6.6, minSize: 5.0 });
+    drawTextInBox(page, data.uf, boxes.uf, { font, size: 6.6, minSize: 5.0 });
+    drawTextInBox(page, data.cep, boxes.cep, { font, size: 6.6, minSize: 5.0 });
+    drawTextInBox(page, data.cargo, boxes.cargo, { font, size: 6.6, minSize: 5.0 });
+    drawTextInBox(page, data.lotacao, boxes.lotacao, { font, size: 6.6, minSize: 5.0 });
+    drawTextInBox(page, data.situacaoFuncional, boxes.situacaoFuncional, { font, size: 6.6, minSize: 5.0 });
   };
 
   drawPerson(titular, B.titular);
@@ -692,12 +701,12 @@ async function preencherPdf(payload) {
     const boxes = B.vinculados[linhaPdf - 1] || B.vinculados[index];
     if (!boxes) return;
 
-    drawTextInBox(page, item.nome, boxes.nome, { font, size: 7.2 });
-    drawTextInBox(page, item.cpf, boxes.cpf, { font, size: 7.2 });
-    drawTextInBox(page, item.nascimento, boxes.nascimento, { font, size: 7.2 });
+    drawTextInBox(page, item.nome, boxes.nome, { font, size: 6.6, minSize: 5.0 });
+    drawTextInBox(page, item.cpf, boxes.cpf, { font, size: 6.6, minSize: 5.0 });
+    drawTextInBox(page, item.nascimento, boxes.nascimento, { font, size: 6.6, minSize: 5.0 });
   });
 
-  drawTextInBox(page, totalFormatado, B.pagamento.total, { font: fontBold, size: 7.2 });
+  drawTextInBox(page, totalFormatado, B.pagamento.total, { font: fontBold, size: 6.6, minSize: 5.0 });
 
   drawCheckInBox(page, pagamento.forma === "boleto", B.pagamento.boleto, fontBold);
   drawCheckInBox(page, pagamento.boleto.melhorDiaPagamento === "5", B.pagamento.boleto5, fontBold);
@@ -706,21 +715,21 @@ async function preencherPdf(payload) {
   drawCheckInBox(page, pagamento.boleto.melhorDiaPagamento === "20", B.pagamento.boleto20, fontBold);
 
   drawCheckInBox(page, pagamento.forma === "cartao_credito", B.pagamento.cartao, fontBold);
-  drawTextInBox(page, pagamento.cartaoCredito.nomeImpresso, B.pagamento.cartaoNome, { font, size: 7 });
-  drawTextInBox(page, pagamento.cartaoCredito.numero, B.pagamento.cartaoNumero, { font, size: 7 });
-  drawTextInBox(page, pagamento.cartaoCredito.validade, B.pagamento.cartaoValidade, { font, size: 7 });
-  drawTextInBox(page, pagamento.cartaoCredito.cvv, B.pagamento.cartaoCvv, { font, size: 7 });
+  drawTextInBox(page, pagamento.cartaoCredito.nomeImpresso, B.pagamento.cartaoNome, { font, size: 6.4, minSize: 5.0 });
+  drawTextInBox(page, pagamento.cartaoCredito.numero, B.pagamento.cartaoNumero, { font, size: 6.4, minSize: 5.0 });
+  drawTextInBox(page, pagamento.cartaoCredito.validade, B.pagamento.cartaoValidade, { font, size: 6.4, minSize: 5.0 });
+  drawTextInBox(page, pagamento.cartaoCredito.cvv, B.pagamento.cartaoCvv, { font, size: 6.4, minSize: 5.0 });
 
   drawCheckInBox(page, pagamento.forma === "debito_conta", B.pagamento.debito, fontBold);
-  drawTextInBox(page, pagamento.debitoConta.tipoConta, B.pagamento.debitoTipo, { font, size: 7 });
-  drawTextInBox(page, pagamento.debitoConta.banco, B.pagamento.debitoBanco, { font, size: 7 });
-  drawTextInBox(page, pagamento.debitoConta.agencia, B.pagamento.debitoAgencia, { font, size: 7 });
-  drawTextInBox(page, pagamento.debitoConta.conta, B.pagamento.debitoConta, { font, size: 7 });
+  drawTextInBox(page, pagamento.debitoConta.tipoConta, B.pagamento.debitoTipo, { font, size: 6.4, minSize: 5.0 });
+  drawTextInBox(page, pagamento.debitoConta.banco, B.pagamento.debitoBanco, { font, size: 6.4, minSize: 5.0 });
+  drawTextInBox(page, pagamento.debitoConta.agencia, B.pagamento.debitoAgencia, { font, size: 6.4, minSize: 5.0 });
+  drawTextInBox(page, pagamento.debitoConta.conta, B.pagamento.debitoConta, { font, size: 6.4, minSize: 5.0 });
 
   drawCheckInBox(page, pagamento.forma === "desconto_folha", B.pagamento.folha, fontBold);
-  drawTextInBox(page, pagamento.descontoFolha.matricula, B.pagamento.folhaMatricula, { font, size: 7 });
-  drawTextInBox(page, pagamento.descontoFolha.orgao, B.pagamento.folhaOrgao, { font, size: 7 });
-  drawTextInBox(page, pagamento.descontoFolha.esfera, B.pagamento.folhaEsfera, { font, size: 7 });
+  drawTextInBox(page, pagamento.descontoFolha.matricula, B.pagamento.folhaMatricula, { font, size: 6.4, minSize: 5.0 });
+  drawTextInBox(page, pagamento.descontoFolha.orgao, B.pagamento.folhaOrgao, { font, size: 6.4, minSize: 5.0 });
+  drawTextInBox(page, pagamento.descontoFolha.esfera, B.pagamento.folhaEsfera, { font, size: 6.4, minSize: 5.0 });
 
 
   const pdfBytes = await pdfDoc.save();
@@ -736,6 +745,8 @@ async function enviarPdfParaAssinafy(pdfBlob, filename, payload) {
   // foi assinado por todos, o backend usa este mesmo e-mail para enviar o PDF final.
   formData.append("recipientEmail", payload.dadosProponente.email);
   formData.append("recipientName", payload.dadosProponente.nome);
+  formData.append("proponenteCpf", payload.dadosProponente.cpf);
+  formData.append("proponenteNascimento", payload.dadosProponente.nascimento);
   formData.append("documentName", filename);
 
   const response = await fetch(ASSINAFY_UPLOAD_ENDPOINT, {

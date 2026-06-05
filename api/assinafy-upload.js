@@ -7,6 +7,7 @@ import {
 } from "../lib/assinafy.js";
 import { saveDocumentMetadata } from "../lib/document-store.js";
 import { isValidEmail, sendSignerInvitationEmail } from "../lib/email.js";
+import { sendNewProponenteWhatsApp } from "../lib/whatsapp.js";
 
 export const config = {
   api: {
@@ -38,6 +39,8 @@ export default async function handler(req, res) {
     const uploadedFile = getSingleFile(files.file);
     const proponenteEmail = getField(fields.recipientEmail);
     const proponenteName = getField(fields.recipientName) || "Proponente";
+    const proponenteCpf = getField(fields.proponenteCpf);
+    const proponenteNascimento = getField(fields.proponenteNascimento);
     const requestedDocumentName = getField(fields.documentName);
 
     if (!uploadedFile) return sendJson(res, 400, { message: "Nenhum PDF foi enviado." });
@@ -58,6 +61,8 @@ export default async function handler(req, res) {
       proponenteName,
       proponenteSignerEmail: proponenteEmail,
       proponenteSignerName: proponenteName,
+      proponenteCpf,
+      proponenteNascimento,
       sindicatoSignerEmail,
       sindicatoSignerName,
       finalRecipients,
@@ -88,6 +93,21 @@ export default async function handler(req, res) {
 
     saveDocumentMetadata(documentId, metadata);
 
+    let whatsappNotification = null;
+    try {
+      whatsappNotification = await sendNewProponenteWhatsApp({
+        nome: proponenteName,
+        cpf: proponenteCpf,
+        nascimento: proponenteNascimento,
+      });
+    } catch (whatsappError) {
+      console.error("[SINDPOL] Falha ao enviar WhatsApp de novo proponente:", whatsappError);
+      whatsappNotification = {
+        sent: false,
+        error: whatsappError?.message || "Falha ao enviar WhatsApp.",
+      };
+    }
+
     // IMPORTANTE:
     // Não criamos a atribuição nesta mesma requisição. A Assinafy pode devolver o documento
     // com status metadata_processing por alguns segundos. Se tentarmos criar a atribuição
@@ -104,6 +124,7 @@ export default async function handler(req, res) {
       proponenteSignerEmail: proponenteEmail,
       sindicatoSignerEmail,
       finalRecipients,
+      whatsappNotification,
       nextStep: `/api/start-assignment?documentId=${documentId}`,
       assignmentCreated: false,
     });
