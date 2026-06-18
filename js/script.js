@@ -30,12 +30,9 @@ function isAssinafyDocumentFullySigned(payload = {}) {
 const form1 = document.getElementById("cadastroForm1");
 const proponentesContainer = document.getElementById("proponentes-container");
 const addProponenteBtn = document.getElementById("addProponenteBtn");
-const gerarTotalBtn = document.getElementById("gerarTotalBtn");
 const valorTotalOutput = document.getElementById("valorTotal");
 const dadosPagadorSection = document.getElementById("dados-pagador-section");
 const submitBtn = document.querySelector(".submit-btn");
-const formaPagamentoRadios = document.querySelectorAll('input[name="formaPagamento"]');
-const paymentPanels = document.querySelectorAll("[data-payment-panel]");
 
 const VALOR_POR_PESSOA = 40;
 const MAX_PROPONENTES_VINCULADOS = 5;
@@ -234,6 +231,11 @@ function criarProponenteCard() {
         <label data-field="nascimento" for="proponente_nascimento_${number}">Data de nascimento:</label>
         <input data-field="nascimento" type="date" id="proponente_nascimento_${number}" name="proponente_nascimento_${number}" />
       </div>
+
+      <div class="field full">
+        <label data-field="email" for="proponente_email_${number}">E-mail:</label>
+        <input data-field="email" type="email" id="proponente_email_${number}" name="proponente_email_${number}" />
+      </div>
     </div>
   `;
 
@@ -265,12 +267,14 @@ function getProponentesAdicionais() {
     const nome = card.querySelector('[data-field="nome"]')?.value?.trim() || getFieldValue(`proponente_nome_${numero}`);
     const cpf = card.querySelector('[data-field="cpf"]')?.value?.trim() || getFieldValue(`proponente_cpf_${numero}`);
     const nascimentoRaw = card.querySelector('[data-field="nascimento"]')?.value || getFieldValue(`proponente_nascimento_${numero}`);
+    const email = card.querySelector('[data-field="email"]')?.value?.trim() || getFieldValue(`proponente_email_${numero}`);
 
     proponentes.push({
       numero,
       nome,
       cpf,
       nascimento: formatDateBR(nascimentoRaw),
+      email,
       valorPorPessoa: VALOR_POR_PESSOA,
     });
   });
@@ -283,13 +287,15 @@ function getProponentesAdicionais() {
     const nome = getFieldValue(`proponente_nome_${numero}`);
     const cpf = getFieldValue(`proponente_cpf_${numero}`);
     const nascimento = formatDateBR(getFieldValue(`proponente_nascimento_${numero}`));
+    const email = getFieldValue(`proponente_email_${numero}`);
 
-    if (nome || cpf || nascimento) {
+    if (nome || cpf || nascimento || email) {
       proponentes.push({
         numero,
         nome,
         cpf,
         nascimento,
+        email,
         valorPorPessoa: VALOR_POR_PESSOA,
       });
     }
@@ -298,7 +304,7 @@ function getProponentesAdicionais() {
   return proponentes
     .sort((a, b) => a.numero - b.numero)
     .slice(0, MAX_PROPONENTES_VINCULADOS)
-    .filter((proponente) => proponente.nome || proponente.cpf || proponente.nascimento);
+    .filter((proponente) => proponente.nome || proponente.cpf || proponente.nascimento || proponente.email);
 }
 
 addProponenteBtn?.addEventListener("click", () => {
@@ -370,66 +376,23 @@ dadosPagadorSection?.addEventListener("focusin", mostrarAlertaPagador);
 // ===============================
 // FORMA DE PAGAMENTO
 // ===============================
-function getCheckedValue(name) {
-  return document.querySelector(`input[name="${name}"]:checked`)?.value || "";
-}
-
-function atualizarPainelPagamento() {
-  const formaSelecionada = getCheckedValue("formaPagamento");
-
-  paymentPanels.forEach((panel) => {
-    const isActive = panel.dataset.paymentPanel === formaSelecionada;
-    panel.hidden = !isActive;
-
-    if (!isActive) {
-      panel.querySelectorAll("input, select, textarea").forEach((field) => {
-        if (field.type === "radio" || field.type === "checkbox") field.checked = false;
-        else field.value = "";
-      });
-    }
-  });
-}
-
+// A forma de pagamento agora é fixa como BOLETO, conforme novo PDF oficial.
+// As antigas opções de pagamento e seus campos foram removidos para simplificar o fluxo.
 function getFormaPagamento() {
-  const forma = getCheckedValue("formaPagamento");
-
   return {
-    forma,
+    forma: "boleto",
     boleto: {
-      melhorDiaPagamento: getCheckedValue("boletoDia"),
+      melhorDiaPagamento: "",
     },
-    cartaoCredito: {
-      nomeImpresso: getFieldValue("cartao_nome"),
-      numero: getFieldValue("cartao_numero"),
-      validade: getFieldValue("cartao_validade"),
-      cvv: getFieldValue("cartao_cvv"),
-    },
-    debitoConta: {
-      tipoConta: getFieldValue("debito_tipo_conta"),
-      banco: getFieldValue("debito_banco"),
-      agencia: getFieldValue("debito_agencia"),
-      conta: getFieldValue("debito_conta"),
-    },
-    descontoFolha: {
-      matricula: getFieldValue("folha_matricula"),
-      orgao: getFieldValue("folha_orgao"),
-      esfera: getCheckedValue("folha_esfera"),
-    },
+    cartaoCredito: {},
+    debitoConta: {},
+    descontoFolha: {},
   };
 }
 
 function resetarFormaPagamento() {
-  document.querySelectorAll('input[name="formaPagamento"], input[name="boletoDia"], input[name="folha_esfera"]').forEach((field) => {
-    field.checked = false;
-  });
-  paymentPanels.forEach((panel) => {
-    panel.hidden = true;
-  });
+  gerarValorTotal();
 }
-
-formaPagamentoRadios.forEach((radio) => {
-  radio.addEventListener("change", atualizarPainelPagamento);
-});
 
 // ===============================
 // VALOR TOTAL
@@ -449,7 +412,6 @@ function gerarValorTotal() {
   return total;
 }
 
-gerarTotalBtn?.addEventListener("click", gerarValorTotal);
 
 // ===============================
 // COLETA DE DADOS
@@ -641,33 +603,14 @@ async function preencherPdf(payload) {
       situacaoFuncional: [386.7, 331.3, 126.0, 14.0],
     },
     vinculados: [
-      { nome: [62.7, 388.0, 215.3, 16.7], cpf: [302.0, 388.0, 116.0, 17.3], nascimento: [487.3, 388.0, 84.7, 17.3] },
-      { nome: [63.3, 423.3, 214.7, 18.0], cpf: [304.0, 422.0, 116.0, 19.3], nascimento: [486.0, 422.7, 86.0, 18.7] },
-      { nome: [63.3, 460.7, 215.3, 16.7], cpf: [302.0, 460.7, 117.3, 18.0], nascimento: [487.3, 460.0, 84.7, 19.3] },
-      { nome: [64.0, 497.3, 214.0, 16.7], cpf: [303.3, 496.7, 115.3, 16.0], nascimento: [487.3, 498.0, 84.0, 14.7] },
-      { nome: [62.7, 532.0, 215.3, 16.0], cpf: [303.3, 530.7, 116.7, 17.3], nascimento: [488.7, 532.0, 82.7, 16.0] },
+      { nome: [63.0, 388.5, 160.0, 16.0], cpf: [248.0, 388.5, 76.0, 16.0], nascimento: [386.0, 388.5, 64.0, 16.0], email: [478.0, 388.5, 92.0, 16.0] },
+      { nome: [63.0, 423.5, 160.0, 16.0], cpf: [248.0, 423.5, 76.0, 16.0], nascimento: [386.0, 423.5, 64.0, 16.0], email: [478.0, 423.5, 92.0, 16.0] },
+      { nome: [63.0, 460.5, 160.0, 16.0], cpf: [248.0, 460.5, 76.0, 16.0], nascimento: [386.0, 460.5, 64.0, 16.0], email: [478.0, 460.5, 92.0, 16.0] },
+      { nome: [63.0, 497.0, 160.0, 16.0], cpf: [248.0, 497.0, 76.0, 16.0], nascimento: [386.0, 497.0, 64.0, 16.0], email: [478.0, 497.0, 92.0, 16.0] },
+      { nome: [63.0, 532.5, 160.0, 16.0], cpf: [248.0, 532.5, 76.0, 16.0], nascimento: [386.0, 532.5, 64.0, 16.0], email: [478.0, 532.5, 92.0, 16.0] },
     ],
     pagamento: {
       total: [307.0, 561.0, 90.0, 14.0],
-      boleto: [72.7, 579.3, 17.3, 14.0],
-      boleto5: [129.3, 579.3, 18.0, 15.3],
-      boleto10: [204.7, 580.7, 22.0, 14.0],
-      boleto15: [275.3, 580.0, 22.7, 13.3],
-      boleto20: [345.3, 578.7, 21.3, 14.7],
-      cartao: [131.3, 601.3, 17.3, 15.3],
-      cartaoNome: [192.7, 602.0, 101.3, 15.3],
-      cartaoNumero: [312.7, 601.3, 86.7, 16.0],
-      cartaoValidade: [444.7, 600.0, 54.0, 17.3],
-      cartaoCvv: [523.3, 600.0, 51.3, 16.7],
-      debito: [122.7, 622.7, 15.3, 15.3],
-      debitoTipo: [218.7, 623.3, 66.0, 14.7],
-      debitoBanco: [320.7, 623.3, 71.3, 14.7],
-      debitoAgencia: [435.3, 623.3, 50.7, 16.0],
-      debitoConta: [503.3, 623.3, 72.0, 16.0],
-      folha: [140.7, 648.0, 14.7, 12.7],
-      folhaMatricula: [230.0, 646.0, 79.3, 15.3],
-      folhaOrgao: [344.7, 646.0, 88.0, 16.7],
-      folhaEsfera: [468.0, 646.7, 108.0, 16.7],
     },
   };
 
@@ -703,33 +646,13 @@ async function preencherPdf(payload) {
 
     drawTextInBox(page, item.nome, boxes.nome, { font, size: 6.6, minSize: 5.0 });
     drawTextInBox(page, item.cpf, boxes.cpf, { font, size: 6.6, minSize: 5.0 });
-    drawTextInBox(page, item.nascimento, boxes.nascimento, { font, size: 6.6, minSize: 5.0 });
+    drawTextInBox(page, item.nascimento, boxes.nascimento, { font, size: 6.4, minSize: 4.8 });
+    drawTextInBox(page, item.email, boxes.email, { font, size: 6.2, minSize: 4.6 });
   });
 
   drawTextInBox(page, totalFormatado, B.pagamento.total, { font: fontBold, size: 6.6, minSize: 5.0 });
 
-  drawCheckInBox(page, pagamento.forma === "boleto", B.pagamento.boleto, fontBold);
-  drawCheckInBox(page, pagamento.boleto.melhorDiaPagamento === "5", B.pagamento.boleto5, fontBold);
-  drawCheckInBox(page, pagamento.boleto.melhorDiaPagamento === "10", B.pagamento.boleto10, fontBold);
-  drawCheckInBox(page, pagamento.boleto.melhorDiaPagamento === "15", B.pagamento.boleto15, fontBold);
-  drawCheckInBox(page, pagamento.boleto.melhorDiaPagamento === "20", B.pagamento.boleto20, fontBold);
-
-  drawCheckInBox(page, pagamento.forma === "cartao_credito", B.pagamento.cartao, fontBold);
-  drawTextInBox(page, pagamento.cartaoCredito.nomeImpresso, B.pagamento.cartaoNome, { font, size: 6.4, minSize: 5.0 });
-  drawTextInBox(page, pagamento.cartaoCredito.numero, B.pagamento.cartaoNumero, { font, size: 6.4, minSize: 5.0 });
-  drawTextInBox(page, pagamento.cartaoCredito.validade, B.pagamento.cartaoValidade, { font, size: 6.4, minSize: 5.0 });
-  drawTextInBox(page, pagamento.cartaoCredito.cvv, B.pagamento.cartaoCvv, { font, size: 6.4, minSize: 5.0 });
-
-  drawCheckInBox(page, pagamento.forma === "debito_conta", B.pagamento.debito, fontBold);
-  drawTextInBox(page, pagamento.debitoConta.tipoConta, B.pagamento.debitoTipo, { font, size: 6.4, minSize: 5.0 });
-  drawTextInBox(page, pagamento.debitoConta.banco, B.pagamento.debitoBanco, { font, size: 6.4, minSize: 5.0 });
-  drawTextInBox(page, pagamento.debitoConta.agencia, B.pagamento.debitoAgencia, { font, size: 6.4, minSize: 5.0 });
-  drawTextInBox(page, pagamento.debitoConta.conta, B.pagamento.debitoConta, { font, size: 6.4, minSize: 5.0 });
-
-  drawCheckInBox(page, pagamento.forma === "desconto_folha", B.pagamento.folha, fontBold);
-  drawTextInBox(page, pagamento.descontoFolha.matricula, B.pagamento.folhaMatricula, { font, size: 6.4, minSize: 5.0 });
-  drawTextInBox(page, pagamento.descontoFolha.orgao, B.pagamento.folhaOrgao, { font, size: 6.4, minSize: 5.0 });
-  drawTextInBox(page, pagamento.descontoFolha.esfera, B.pagamento.folhaEsfera, { font, size: 6.4, minSize: 5.0 });
+  // Forma de pagamento fixa como BOLETO no novo modelo.
 
 
   const pdfBytes = await pdfDoc.save();

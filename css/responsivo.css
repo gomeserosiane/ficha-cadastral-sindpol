@@ -90,17 +90,27 @@
 }
 
 
-@media (max-width: 900px) {
-  .payment-options,
-  .site-footer {
-    grid-template-columns: 1fr;
-  }
-}
+
 
 @media (max-width: 768px) {
-  .payment-title-row .percentage-box {
+  .boleto-title-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .boleto-title-row h2,
+  .boleto-badge,
+  .boleto-total-box {
+    width: 100%;
+  }
+
+  .boleto-arrow {
+    width: 100%;
+    min-height: 4px;
+    flex-basis: auto;
+  }
+
+  .boleto-total-box {
     margin-left: 0;
-    justify-content: flex-start;
   }
 }
-

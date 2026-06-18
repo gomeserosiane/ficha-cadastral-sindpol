@@ -223,132 +223,30 @@
             </button>
           </section>
 
-          <section class="form-section payment-section">
-            <div class="section-title-row payment-title-row">
+          <section class="form-section payment-section boleto-only-section">
+            <div class="section-title-row payment-title-row boleto-title-row">
               <h2>Forma de pagamento</h2>
-              <div class="percentage-box">
-                <button class="btn btn-lime" id="gerarTotalBtn" type="button">
-                  Gerar Total
-                </button>
-                <div class="percentage-result">
-                  <label for="valorTotal">Total:</label>
-                  <output id="valorTotal">R$ 0,00</output>
-                </div>
-              </div>
-            </div>
-            <div class="payment-options" role="radiogroup" aria-label="Forma de pagamento">
-              <label class="payment-card">
-                <input type="radio" name="formaPagamento" value="boleto" />
-                <span>Boleto</span>
-              </label>
-              <label class="payment-card">
-                <input type="radio" name="formaPagamento" value="cartao_credito" />
-                <span>Cartão de crédito</span>
-              </label>
-              <label class="payment-card">
-                <input type="radio" name="formaPagamento" value="debito_conta" />
-                <span>Débito em conta</span>
-              </label>
-              <label class="payment-card">
-                <input type="radio" name="formaPagamento" value="desconto_folha" />
-                <span>Desconto em folha de pagamento</span>
-              </label>
-            </div>
-
-            <div class="payment-details" id="pagamento-boleto" data-payment-panel="boleto" hidden>
-              <h3>Boleto</h3>
-              <div class="grid">
-                <div class="field full">
-                  <label>Escolha o melhor dia para pagamento:</label>
-                  <div class="radio-inline-group">
-                    <label><input type="radio" name="boletoDia" value="5" /> Dia 5</label>
-                    <label><input type="radio" name="boletoDia" value="10" /> Dia 10</label>
-                    <label><input type="radio" name="boletoDia" value="15" /> Dia 15</label>
-                    <label><input type="radio" name="boletoDia" value="20" /> Dia 20</label>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="payment-details" id="pagamento-cartao" data-payment-panel="cartao_credito" hidden>
-              <h3>Cartão de crédito</h3>
-              <div class="grid">
-                <div class="field full">
-                  <label for="cartao_nome">Nome impresso no cartão:</label>
-                  <input id="cartao_nome" name="cartao_nome" type="text" autocomplete="cc-name" />
-                </div>
-                <div class="field full">
-                  <label for="cartao_numero">Número do cartão:</label>
-                  <input id="cartao_numero" name="cartao_numero" type="text" inputmode="numeric"
-                    autocomplete="cc-number" />
-                </div>
-                <div class="field">
-                  <label for="cartao_validade">Validade:</label>
-                  <input id="cartao_validade" name="cartao_validade" type="text" placeholder="MM/AA"
-                    autocomplete="cc-exp" />
-                </div>
-                <div class="field">
-                  <label for="cartao_cvv">CVV:</label>
-                  <input id="cartao_cvv" name="cartao_cvv" type="text" inputmode="numeric" maxlength="4"
-                    autocomplete="cc-csc" />
-                </div>
-              </div>
-            </div>
-
-            <div class="payment-details" id="pagamento-debito" data-payment-panel="debito_conta" hidden>
-              <h3>Débito em conta</h3>
-              <div class="grid">
-                <div class="field">
-                  <label for="debito_tipo_conta">Tipo de conta:</label>
-                  <select id="debito_tipo_conta" name="debito_tipo_conta">
-                    <option value="">Selecione</option>
-                    <option value="Conta corrente">Conta corrente</option>
-                    <option value="Conta poupança">Conta poupança</option>
-                    <option value="Conta salário">Conta salário</option>
-                  </select>
-                </div>
-                <div class="field">
-                  <label for="debito_banco">Banco:</label>
-                  <input id="debito_banco" name="debito_banco" type="text" />
-                </div>
-                <div class="field">
-                  <label for="debito_agencia">Agência:</label>
-                  <input id="debito_agencia" name="debito_agencia" type="text" />
-                </div>
-                <div class="field">
-                  <label for="debito_conta">Conta:</label>
-                  <input id="debito_conta" name="debito_conta" type="text" />
-                </div>
-              </div>
-            </div>
-
-            <div class="payment-details" id="pagamento-folha" data-payment-panel="desconto_folha" hidden>
-              <h3>Desconto em folha de pagamento</h3>
-              <div class="grid">
-                <div class="field">
-                  <label for="folha_matricula">N° da matrícula:</label>
-                  <input id="folha_matricula" name="folha_matricula" type="text" />
-                </div>
-                <div class="field">
-                  <label for="folha_orgao">Nome do órgão:</label>
-                  <input id="folha_orgao" name="folha_orgao" type="text" />
-                </div>
-                <div class="field full">
-                  <label>Esfera do órgão:</label>
-                  <div class="radio-inline-group">
-                    <label><input type="radio" name="folha_esfera" value="Federal" /> Federal</label>
-                    <label><input type="radio" name="folha_esfera" value="Estadual" /> Estadual</label>
-                    <label><input type="radio" name="folha_esfera" value="Municipal" /> Municipal</label>
-                  </div>
-                </div>
+              <div class="boleto-arrow" aria-hidden="true"></div>
+              <span class="boleto-badge">BOLETO</span>
+              <div class="percentage-result boleto-total-box">
+                <label for="valorTotal">Total:</label>
+                <output id="valorTotal">R$ 0,00</output>
               </div>
             </div>
 
             <p class="payment-note">
-              Atesto para os devidos fins ou aquém interessar, que essas informações são verídicas. 
-              Da mesma forma que autorizo o SINDPOL/PA a proceder com os meios legais para fazer a cobrança 
-              por meio da via de pagamento que escolhi para prosseguir com a assinatura deste contrato de 
-              plano/benefício.
+              Atesto para os devidos fins ou aquém interessar, que essas informações são verídicas.
+              Da mesma forma que autorizo o <b>SINDPOL/PA</b> a proceder com os meios legais para fazer a cobrança
+              por meio da via de pagamento que está acordada neste contrato para prosseguir com a assinatura.
+            </p>
+
+            <br>
+
+            <p class="payment-note">
+              Observações: <br>
+              <b>1 – O Período de desistência sem ônus é de 5 dias após a assinatura deste contrato.</b> <br>
+              <b>2 – O envio do boleto será enviado entre o dia 25 ao dia 30 referente ao mês subsequente à
+              assinatura deste contrato, para utilização dos benefícios.</b>
             </p>
 
           </section>
