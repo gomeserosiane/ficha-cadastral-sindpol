@@ -30,6 +30,7 @@
 - Removida a integração de WhatsApp.
 - Implementada notificação de novo proponente por e-mail para `FINAL_DOCUMENT_EMAIL_1`, mantendo esse mesmo e-mail também como destinatário do documento final.
 - Redimensionamento automático do texto salvo no PDF para manter os dados dentro dos espaços em branco.
+- PDF modelo `docs/ficha-sindpol.pdf` otimizado para reduzir o peso do envio e evitar erro de payload/timeout na Vercel e na Assinafy.
 - Validado com `node --check` em `js/script.js`, rotas `api/` e bibliotecas `lib/`.
 
 ## Variáveis obrigatórias na Vercel
