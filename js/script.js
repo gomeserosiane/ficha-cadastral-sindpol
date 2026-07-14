@@ -500,11 +500,15 @@ function drawTextInBox(page, text, box, options = {}) {
 
   const [x, y, width, height] = box;
   const font = options.font;
-  const initialSize = options.size || 6.6;
+  const requestedSize = options.size || 9.2;
   const minSize = options.minSize || 5.2;
   const paddingX = options.paddingX ?? 3;
+  const paddingY = options.paddingY ?? 2;
   const pageHeight = page.getHeight();
   const maxWidth = Math.max(4, width - paddingX * 2);
+  // Além da largura, limita a fonte pela altura útil. Assim, mesmo campos curtos
+  // nunca atravessam as linhas superior ou inferior do espaço em branco.
+  const initialSize = Math.min(requestedSize, Math.max(minSize, height - paddingY * 2));
   const fitted = ajustarTextoAoBox(text, font, initialSize, maxWidth, minSize);
 
   if (!fitted.value) return;
@@ -563,7 +567,7 @@ async function preencherPdf(payload) {
   const totalFormatado = formatCurrencyBR(payload.valorTotal);
 
   const B = {
-    // Coordenadas finais calibradas no PDF otimizado usado em docs/ficha-sindpol.pdf.
+    // Coordenadas recalibradas para o modelo oficial de 30 páginas de julho/2026.
     // Formato: [x, yVisualDoTopo, largura, altura], em pontos PDF.
     // O yVisualDoTopo segue a mesma orientação visual da página renderizada: de cima para baixo.
     titular: {
@@ -615,22 +619,9 @@ async function preencherPdf(payload) {
   };
 
   const drawPerson = (data, boxes) => {
-    drawTextInBox(page, data.nome, boxes.nome, { font, size: 6.6, minSize: 5.0 });
-    drawTextInBox(page, data.rg, boxes.rg, { font, size: 6.6, minSize: 5.0 });
-    drawTextInBox(page, data.cpf, boxes.cpf, { font, size: 6.6, minSize: 5.0 });
-    drawTextInBox(page, data.nascimento, boxes.nascimento, { font, size: 6.6, minSize: 5.0 });
-    drawTextInBox(page, data.sexo, boxes.sexo, { font, size: 6.6, minSize: 5.0 });
-    drawTextInBox(page, data.tipoSanguineo, boxes.tipoSanguineo, { font, size: 6.6, minSize: 5.0 });
-    drawTextInBox(page, data.admissao, boxes.admissao, { font, size: 6.6, minSize: 5.0 });
-    drawTextInBox(page, data.telefone, boxes.telefone, { font, size: 6.6, minSize: 5.0 });
-    drawTextInBox(page, data.email, boxes.email, { font, size: 6.6, minSize: 5.0 });
-    drawTextInBox(page, data.endereco, boxes.endereco, { font, size: 6.6, minSize: 5.0 });
-    drawTextInBox(page, data.cidade, boxes.cidade, { font, size: 6.6, minSize: 5.0 });
-    drawTextInBox(page, data.uf, boxes.uf, { font, size: 6.6, minSize: 5.0 });
-    drawTextInBox(page, data.cep, boxes.cep, { font, size: 6.6, minSize: 5.0 });
-    drawTextInBox(page, data.cargo, boxes.cargo, { font, size: 6.6, minSize: 5.0 });
-    drawTextInBox(page, data.lotacao, boxes.lotacao, { font, size: 6.6, minSize: 5.0 });
-    drawTextInBox(page, data.situacaoFuncional, boxes.situacaoFuncional, { font, size: 6.6, minSize: 5.0 });
+    Object.entries(boxes).forEach(([field, box]) => {
+      drawTextInBox(page, data[field], box, { font, size: 9.2, minSize: 5.2 });
+    });
   };
 
   drawPerson(titular, B.titular);
@@ -644,13 +635,13 @@ async function preencherPdf(payload) {
     const boxes = B.vinculados[linhaPdf - 1] || B.vinculados[index];
     if (!boxes) return;
 
-    drawTextInBox(page, item.nome, boxes.nome, { font, size: 6.6, minSize: 5.0 });
-    drawTextInBox(page, item.cpf, boxes.cpf, { font, size: 6.6, minSize: 5.0 });
-    drawTextInBox(page, item.nascimento, boxes.nascimento, { font, size: 6.4, minSize: 4.8 });
-    drawTextInBox(page, item.email, boxes.email, { font, size: 6.2, minSize: 4.6 });
+    drawTextInBox(page, item.nome, boxes.nome, { font, size: 9.0, minSize: 5.0 });
+    drawTextInBox(page, item.cpf, boxes.cpf, { font, size: 9.0, minSize: 5.0 });
+    drawTextInBox(page, item.nascimento, boxes.nascimento, { font, size: 8.8, minSize: 5.0 });
+    drawTextInBox(page, item.email, boxes.email, { font, size: 8.4, minSize: 4.6 });
   });
 
-  drawTextInBox(page, totalFormatado, B.pagamento.total, { font: fontBold, size: 6.6, minSize: 5.0 });
+  drawTextInBox(page, totalFormatado, B.pagamento.total, { font: fontBold, size: 9.2, minSize: 5.2 });
 
   // Forma de pagamento fixa como BOLETO no novo modelo.
 

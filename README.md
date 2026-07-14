@@ -29,8 +29,9 @@
 - Removidos os campos, coleta e cópia de dados de `estado civil`.
 - Removida a integração de WhatsApp.
 - Implementada notificação de novo proponente por e-mail para `FINAL_DOCUMENT_EMAIL_1`, mantendo esse mesmo e-mail também como destinatário do documento final.
-- Redimensionamento automático do texto salvo no PDF para manter os dados dentro dos espaços em branco.
-- PDF modelo `docs/ficha-sindpol.pdf` otimizado para reduzir o peso do envio e evitar erro de payload/timeout na Vercel e na Assinafy.
+- Novo PDF oficial de 30 páginas aplicado em `docs/ficha-sindpol.pdf`.
+- Fonte dos dados ampliada para até 9,2 pt, com ajuste automático por largura e altura para manter cada informação dentro do seu espaço em branco.
+- PDF modelo otimizado para reduzir o peso do envio e evitar erro de payload/timeout na Vercel e na Assinafy.
 - Validado com `node --check` em `js/script.js`, rotas `api/` e bibliotecas `lib/`.
 
 ## Variáveis obrigatórias na Vercel
